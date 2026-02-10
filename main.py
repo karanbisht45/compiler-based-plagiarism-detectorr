@@ -14,9 +14,9 @@ from plagiarism.final_score import (
     final_verdict
 )
 
-# -----------------------------
+# ------------------------
 # STEP 1: BUILD SAMPLE IR
-# -----------------------------
+# ------------------------
 
 program = IRNode("PROGRAM")
 
