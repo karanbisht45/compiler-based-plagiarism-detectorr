@@ -70,22 +70,27 @@ tree_hash = hash_node(normalized_program)
 print("\n=== TREE HASH ===")
 print(tree_hash)
 
-
 # -----------------------------
 # STEP 5: PARTIAL PLAGIARISM TEST
 # -----------------------------
 
-# Create second program with partial similarity
+# Create second program with realistic similarity
 program2 = IRNode("PROGRAM")
 cls2 = IRNode("CLASS", "AnotherClass")
 func2 = IRNode("FUNCTION", "bar")
 block2 = IRNode("BLOCK")
 
-# Only one copied statement
+# ptr2 = &a
+assign_p = IRNode("ASSIGN")
+assign_p.add_child(IRNode("VAR", "ptr2"))
+assign_p.add_child(IRNode("POINTER_REF", "a"))
+
+# y = *ptr2
 assign_copy = IRNode("ASSIGN")
 assign_copy.add_child(IRNode("VAR", "y"))
-assign_copy.add_child(IRNode("POINTER_DEREF", "ptr"))
+assign_copy.add_child(IRNode("POINTER_DEREF", "ptr2"))
 
+block2.add_child(assign_p)
 block2.add_child(assign_copy)
 
 func2.add_child(block2)
@@ -96,14 +101,15 @@ program2.add_child(cls2)
 normalizer2 = IRNormalizer()
 program2 = normalizer2.normalize(program2)
 
-# Compute similarity
+# Compute subtree similarity
 similarity = subtree_similarity(normalized_program, program2)
 
 print("\n=== SUBTREE SIMILARITY ===")
 print(f"Similarity Score: {similarity:.2f}")
 
-
-
+# -----------------------------
+# STEP 6: CFG BUILD
+# -----------------------------
 
 print("\n=== CFG BUILD ===")
 cfg_entry, cfg_exits = build_cfg(normalized_program)
@@ -112,10 +118,8 @@ print("CFG Entry:", cfg_entry)
 print("CFG Exit Nodes:", cfg_exits)
 print("CFG Entry Next:", cfg_entry.next)
 
-
-
 # -----------------------------
-# STEP 6: CFG SIMILARITY TEST
+# STEP 7: CFG SIMILARITY
 # -----------------------------
 
 cfg_entry1, _ = build_cfg(normalized_program)
@@ -126,9 +130,8 @@ cfg_sim = cfg_similarity(cfg_entry1, cfg_entry2)
 print("\n=== CFG SIMILARITY ===")
 print(f"CFG Similarity Score: {cfg_sim:.2f}")
 
-
 # -----------------------------
-# STEP 7: PDG SIMILARITY
+# STEP 8: PDG SIMILARITY
 # -----------------------------
 
 pdg_sim = pdg_similarity(normalized_program, program2)
@@ -136,16 +139,8 @@ pdg_sim = pdg_similarity(normalized_program, program2)
 print("\n=== PDG SIMILARITY ===")
 print(f"PDG Similarity Score: {pdg_sim:.2f}")
 
-
-
-from plagiarism.final_score import (
-    compute_plagiarism_score,
-    compute_ai_probability,
-    final_verdict
-)
-
 # -----------------------------
-# STEP 8: FINAL SCORING
+# STEP 9: FINAL SCORING
 # -----------------------------
 
 final_plag_score = compute_plagiarism_score(
