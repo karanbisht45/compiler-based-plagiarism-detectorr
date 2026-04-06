@@ -10,12 +10,15 @@ from plagiarism.final_score import (
     final_verdict
 )
 
+
 def check_single_program(ir_tree, repository_programs):
     """
     Compare one program against repository
     """
+
     best_score = 0
     best_match = None
+    scores = []
 
     for item in repository_programs:
         ref_ir = item["ir"]
@@ -32,6 +35,8 @@ def check_single_program(ir_tree, repository_programs):
             subtree_sim, cfg_sim, pdg_sim
         )
 
+        scores.append(plag_score)
+
         if plag_score > best_score:
             best_score = plag_score
             best_match = {
@@ -40,6 +45,7 @@ def check_single_program(ir_tree, repository_programs):
                 "pdg": pdg_sim
             }
 
+    # 🔥 SAFETY: no repository
     if best_match is None:
         return {
             "plagiarism": 0.0,
@@ -47,19 +53,27 @@ def check_single_program(ir_tree, repository_programs):
             "verdict": "No reference data"
         }
 
+    # 🔥 NEW: average similarity (reduces false positives)
+    avg_score = sum(scores) / len(scores) if scores else 0
+
+    # 🔥 FINAL PLAG SCORE ADJUSTMENT
+    if best_score < 30 and avg_score < 25:
+        final_plag = best_score * 0.6   # dampen noise
+    else:
+        final_plag = best_score
+
+    # 🔥 AI probability
     ai_prob = compute_ai_probability(
-        best_match["plagiarism"],
+        final_plag,
         best_match["cfg"],
         best_match["pdg"]
     )
 
-    verdict = final_verdict(
-        best_match["plagiarism"],
-        ai_prob
-    )
+    # 🔥 Verdict
+    verdict = final_verdict(final_plag, ai_prob)
 
     return {
-        "plagiarism": best_match["plagiarism"],
+        "plagiarism": final_plag,
         "ai_prob": ai_prob,
         "verdict": verdict
     }
