@@ -6,7 +6,9 @@ class CFGNode:
         self.next = []
 
     def add_edge(self, node):
-        self.next.append(node)
+        # 🔥 Prevent duplicate edges
+        if node not in self.next:
+            self.next.append(node)
 
     def __repr__(self):
         return f"CFGNode({self.label})"
@@ -18,7 +20,12 @@ def build_cfg(ir_node):
     Returns (entry_node, exit_nodes)
     """
 
-    entry = CFGNode(ir_node.node_type)
+    # 🔥 Use more informative label
+    label = ir_node.node_type
+    if ir_node.value:
+        label += f"({ir_node.value})"
+
+    entry = CFGNode(label)
 
     # -------------------------
     # PROGRAM / BLOCK / FUNCTION / CLASS
@@ -36,7 +43,6 @@ def build_cfg(ir_node):
 
     # -------------------------
     # IF STATEMENT
-    # children: [cond, then, else?]
     # -------------------------
     if ir_node.node_type == "IF":
         cond_node = CFGNode("IF_COND")
@@ -59,7 +65,6 @@ def build_cfg(ir_node):
 
     # -------------------------
     # WHILE / FOR LOOP
-    # children: [cond, body]
     # -------------------------
     if ir_node.node_type in ("WHILE", "FOR"):
         loop_cond = CFGNode("LOOP_COND")
