@@ -6,52 +6,73 @@ def clamp(x, low=0.0, high=1.0):
 
 def compute_plagiarism_score(subtree_sim, cfg_sim, pdg_sim):
     """
-    Weighted plagiarism score
+    Weighted plagiarism score (balanced)
     """
-    # Weights (defendable in viva)
+
+    # 🔥 Slightly safer weights (reduce false positives)
     w_subtree = 0.4
     w_cfg = 0.35
     w_pdg = 0.25
 
-    score = (
+    raw_score = (
         w_subtree * subtree_sim +
         w_cfg * cfg_sim +
         w_pdg * pdg_sim
     )
 
-    return clamp(score) * 100
+    # 🔥 Soft penalty for weak similarity
+    if raw_score < 0.3:
+        raw_score *= 0.7
+
+    return clamp(raw_score) * 100
 
 
 def compute_ai_probability(plagiarism_score, cfg_sim, pdg_sim):
     """
-    Heuristic AI-written probability (code)
+    Improved heuristic AI-written probability
     """
+
     ai_score = 0.0
 
-    # High structure + low semantic diversity → AI-like
-    if cfg_sim > 0.85:
+    # 🔹 Very structured flow → AI-like
+    if cfg_sim > 0.9:
         ai_score += 0.4
 
-    if pdg_sim > 0.7:
+    # 🔹 Strong semantic similarity
+    if pdg_sim > 0.75:
         ai_score += 0.3
 
-    if plagiarism_score > 80:
-        ai_score += 0.3
+    # 🔹 High plagiarism → suspicious
+    if plagiarism_score > 70:
+        ai_score += 0.2
+
+    # 🔹 Low variation between structure & semantics
+    if abs(cfg_sim - pdg_sim) < 0.1:
+        ai_score += 0.1
 
     return clamp(ai_score) * 100
 
 
 def final_verdict(plagiarism_score, ai_probability):
     """
-    Human-readable verdict
+    Improved verdict logic (demo-safe)
     """
-    if ai_probability > 70:
+
+    # 🔥 Strong AI signal first
+    if ai_probability > 75:
         return "Likely AI-generated"
 
-    if plagiarism_score > 75:
-        return "Highly Plagiarized"
+    # 🔹 Safe zone
+    if plagiarism_score < 25:
+        return "Likely Human-written"
 
-    if plagiarism_score > 40:
+    # 🔹 Low similarity
+    if plagiarism_score < 50:
+        return "Low similarity (Safe)"
+
+    # 🔹 Moderate plagiarism
+    if plagiarism_score < 75:
         return "Possibly Plagiarized"
 
-    return "Likely Human-written"
+    # 🔹 High plagiarism
+    return "Highly Plagiarized"
