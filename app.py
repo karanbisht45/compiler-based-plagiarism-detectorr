@@ -22,7 +22,6 @@ def dummy_ir_from_code(code):
     program = IRNode("PROGRAM")
     block = IRNode("BLOCK")
 
-    # very rough structure simulation
     for line in code.splitlines():
         if "=" in line:
             assign = IRNode("ASSIGN")
@@ -34,7 +33,6 @@ def dummy_ir_from_code(code):
 
     normalizer = IRNormalizer()
     return normalizer.normalize(program)
-
 
 
 st.set_page_config(
@@ -51,52 +49,29 @@ This system detects:
 - 📄 (Coming soon) AI detection for text & PDFs
 """)
 
+# 🔥 TEXT INPUT INSTEAD OF FILE UPLOAD
+st.header("📝 Enter Code")
 
-st.header("📂 Upload Code Files")
+code_input = st.text_area("Paste your code here", height=300)
 
-uploaded_file = st.file_uploader(
-    "Upload a code file",
-    type=["c", "cpp", "java", "py", "js"],
-    accept_multiple_files=False
-)
+# 🔥 ANALYZE BUTTON
+if st.button("Analyze Code"):
 
+    if not code_input.strip():
+        st.warning("Please enter some code")
+        st.stop()
 
-if uploaded_file:
-    st.success(f"{len(uploaded_file)} files uploaded")
-
-
-def detect_language(filename, content):
-    if filename.endswith(".py"):
-        return "Python"
-    if filename.endswith(".java"):
-        return "Java"
-    if filename.endswith(".js"):
-        return "JavaScript"
-    if filename.endswith(".c"):
-        return "C"
-    if filename.endswith(".cpp"):
-        return "C++"
-    return "Unknown"
-
-
-if uploaded_file:
-    st.subheader("📌 Detected Languages")
-
-    for f in uploaded_file:
-        code = f.read().decode("utf-8", errors="ignore")
-        lang = detect_language(f.name, code)
-        st.write(f"**{f.name}** → {lang}")
-
-
-if uploaded_file:
-    code = uploaded_file.read().decode("utf-8", errors="ignore")
-    ir = dummy_ir_from_code(code)
+    # Convert code → IR
+    ir = dummy_ir_from_code(code_input)
 
     repo = get_all_programs()
 
+    # 🔹 FIRST CODE (NO COMPARISON)
     if len(repo) == 0:
-        add_program(ir, {"filename": uploaded_file.name})
-        st.info("First program stored as reference.")
+        add_program(ir)
+        st.info("First submission stored. No comparison available yet.")
+
+    # 🔹 COMPARE WITH PAST
     else:
         result = check_single_program(ir, repo)
 
@@ -105,4 +80,8 @@ if uploaded_file:
         st.metric("AI Probability (%)", f"{result['ai_prob']:.2f}")
         st.success(f"Verdict: {result['verdict']}")
 
-        add_program(ir, {"filename": uploaded_file.name})
+        add_program(ir)
+
+    # 🔥 LEARNING FEEDBACK
+    st.write(f"📚 Repository size: {len(repo)} programs")
+    st.info("System improves as more programs are analyzed.")
