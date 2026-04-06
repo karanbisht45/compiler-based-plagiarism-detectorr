@@ -10,6 +10,9 @@ from plagiarism.final_score import (
     compute_ai_probability,
     final_verdict
 )
+from repository.ir_store import add_program, get_all_programs
+from plagiarism.single_check import check_single_program
+
 
 def dummy_ir_from_code(code):
     """
@@ -51,14 +54,15 @@ This system detects:
 
 st.header("📂 Upload Code Files")
 
-uploaded_files = st.file_uploader(
-    "Upload 2 or more code files",
+uploaded_file = st.file_uploader(
+    "Upload a code file",
     type=["c", "cpp", "java", "py", "js"],
-    accept_multiple_files=True
+    accept_multiple_files=False
 )
 
-if uploaded_files:
-    st.success(f"{len(uploaded_files)} files uploaded")
+
+if uploaded_file:
+    st.success(f"{len(uploaded_file)} files uploaded")
 
 
 def detect_language(filename, content):
@@ -75,46 +79,30 @@ def detect_language(filename, content):
     return "Unknown"
 
 
-if uploaded_files:
+if uploaded_file:
     st.subheader("📌 Detected Languages")
 
-    for f in uploaded_files:
+    for f in uploaded_file:
         code = f.read().decode("utf-8", errors="ignore")
         lang = detect_language(f.name, code)
         st.write(f"**{f.name}** → {lang}")
 
 
-if uploaded_files and len(uploaded_files) >= 2:
-    if st.button("🔍 Analyze Plagiarism"):
-        ir_trees = []
+if uploaded_file:
+    code = uploaded_file.read().decode("utf-8", errors="ignore")
+    ir = dummy_ir_from_code(code)
 
-        for f in uploaded_files:
-            code = f.read().decode("utf-8", errors="ignore")
-            ir = dummy_ir_from_code(code)
-            ir_trees.append(ir)
+    repo = get_all_programs()
 
-        # Compare first two files (extend later)
-        ir1, ir2 = ir_trees[0], ir_trees[1]
+    if len(repo) == 0:
+        add_program(ir, {"filename": uploaded_file.name})
+        st.info("First program stored as reference.")
+    else:
+        result = check_single_program(ir, repo)
 
-        subtree_sim = subtree_similarity(ir1, ir2)
+        st.subheader("📊 Result")
+        st.metric("Plagiarism (%)", f"{result['plagiarism']:.2f}")
+        st.metric("AI Probability (%)", f"{result['ai_prob']:.2f}")
+        st.success(f"Verdict: {result['verdict']}")
 
-        cfg1, _ = build_cfg(ir1)
-        cfg2, _ = build_cfg(ir2)
-        cfg_sim = cfg_similarity(cfg1, cfg2)
-
-        pdg_sim = pdg_similarity(ir1, ir2)
-
-        plag_score = compute_plagiarism_score(
-            subtree_sim, cfg_sim, pdg_sim
-        )
-
-        ai_prob = compute_ai_probability(
-            plag_score, cfg_sim, pdg_sim
-        )
-
-        verdict = final_verdict(plag_score, ai_prob)
-
-        st.subheader("📊 Results")
-        st.metric("Plagiarism Score (%)", f"{plag_score:.2f}")
-        st.metric("AI-Written Probability (%)", f"{ai_prob:.2f}")
-        st.success(f"Verdict: **{verdict}**")
+        add_program(ir, {"filename": uploaded_file.name})
