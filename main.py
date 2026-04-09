@@ -14,16 +14,12 @@ from plagiarism.final_score import (
     final_verdict
 )
 
-# -----------------------
 # STEP 1: BUILD SAMPLE IR
-# -----------------------
 
 program = IRNode("PROGRAM")
 
-# class MyClass
 cls = IRNode("CLASS", "MyClass")
 
-# function foo
 func = IRNode("FUNCTION", "foo")
 block = IRNode("BLOCK")
 
@@ -44,9 +40,7 @@ func.add_child(block)
 cls.add_child(func)
 program.add_child(cls)
 
-# -----------------------------
 # STEP 2: PRINT ORIGINAL IR
-# -----------------------------
 
 print("=== ORIGINAL IR ===")
 print_ir(program)
